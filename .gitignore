@@ -1,5 +1,6 @@
 ﻿node_modules/
 .env
+.env.local
 __pycache__/
 .next/
 *.pyc
@@ -8,4 +9,8 @@ __pycache__/
 *.egg-info/
 dist/
 .pytest_cache/
-.env
+next-env.d.ts.bak
+*.log
+.vercel
+backend/schemas/teif_*.xsd
+!backend/schemas/.gitkeep
