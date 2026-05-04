@@ -3,6 +3,7 @@
 .env.local
 __pycache__/
 .next/
+tsconfig.tsbuildinfo
 *.pyc
 .DS_Store
 .venv/

@@ -9,22 +9,41 @@ export type InvoiceStatus =
   | "rejected"
   | "error";
 
+export type TaxCategory = "S" | "Z" | "E";
+
+export interface Address {
+  street_name: string;
+  city_name: string;
+  postal_zone: string;
+  country_subentity: string;
+  country_code: "TN";
+}
+
+export interface Party {
+  name: string;
+  matricule: string;
+  address: Address;
+}
+
 export interface InvoiceLineItem {
   description: string;
   quantity: string;     // Decimal serialized as string to avoid float drift
   unit_price: string;
-  tva_rate: string;     // "19", "7", "0"
+  tva_rate: string;     // "19", "13", "7", "0"
+  tax_category?: TaxCategory | null;
+  item_code?: string | null;
 }
 
 export interface InvoiceCreate {
-  supplier_name: string;
-  supplier_matricule: string;
-  supplier_address: string;
-  buyer_name: string;
-  buyer_matricule: string;
-  invoice_date: string; // ISO date YYYY-MM-DD
+  supplier: Party;
+  customer: Party;
+  invoice_date: string;       // ISO date YYYY-MM-DD
+  issue_time?: string | null; // HH:MM:SS, defaults to now() server-side
+  due_date?: string | null;
+  invoice_type_code?: string; // defaults to "380"
   items: InvoiceLineItem[];
   currency: "TND";
+  note?: string | null;
 }
 
 export interface InvoiceResponse {
