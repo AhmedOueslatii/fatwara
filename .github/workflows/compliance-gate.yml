@@ -1,0 +1,66 @@
+name: Compliance gate (TEIF XSD)
+
+# Load-bearing CI for the regulated fiscal product.
+# Currently passes by design when backend/schemas/teif_<VERSION>.xsd is absent
+# (skip mode logged in test_compliance.py). The day the real XSD lands, this
+# gate becomes blocking automatically — no workflow change needed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/app/services/teif_generator.py"
+      - "backend/app/models/invoice.py"
+      - "backend/schemas/**"
+      - "backend/tests/test_compliance.py"
+      - ".github/workflows/compliance-gate.yml"
+  pull_request:
+    paths:
+      - "backend/app/services/teif_generator.py"
+      - "backend/app/models/invoice.py"
+      - "backend/schemas/**"
+      - "backend/tests/test_compliance.py"
+      - ".github/workflows/compliance-gate.yml"
+
+jobs:
+  xsd-validation:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install system deps for lxml
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-dev libxslt-dev
+
+      - name: Install Python deps (lxml + pydantic)
+        run: pip install -r requirements.txt
+
+      - name: Warn if real XSD is missing
+        run: |
+          if [ -f "schemas/teif_${TEIF_SCHEMA_VERSION}.xsd" ]; then
+            echo "::notice::Real TEIF XSD present — gate is BLOCKING."
+          else
+            echo "::warning::No XSD bundled at schemas/teif_${TEIF_SCHEMA_VERSION}.xsd — gate runs in skip mode and will not block this PR."
+          fi
+        env:
+          TEIF_SCHEMA_VERSION: "1.8.7"
+
+      - name: Run compliance test
+        env:
+          TEIF_SCHEMA_VERSION: "1.8.7"
+          SUPABASE_URL: "https://placeholder.supabase.co"
+          SUPABASE_SERVICE_KEY: "placeholder"
+          SUPABASE_ANON_KEY: "placeholder"
+        run: pytest tests/test_compliance.py -v --tb=short
