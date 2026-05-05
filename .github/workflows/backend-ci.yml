@@ -39,7 +39,6 @@ jobs:
       - name: Run pytest
         env:
           TEIF_SCHEMA_VERSION: "1.8.7"
-          SUPABASE_URL: "https://placeholder.supabase.co"
-          SUPABASE_SERVICE_KEY: "placeholder"
-          SUPABASE_ANON_KEY: "placeholder"
+          DATABASE_URL: "postgresql+asyncpg://placeholder:placeholder@localhost:5432/placeholder"
+          JWT_SECRET: "ci-placeholder"
         run: pytest tests/ -v --tb=short
