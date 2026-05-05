@@ -1,7 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase-server";
-import SignOutButton from "@/components/sign-out-button";
 
 const NAV = [
   { href: "/dashboard", label: "Accueil" },
@@ -10,18 +7,11 @@ const NAV = [
   { href: "/dashboard/invoices/new", label: "Nouvelle facture" },
 ];
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/auth/login");
-
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
@@ -39,10 +29,6 @@ export default async function DashboardLayout({
                 {item.label}
               </Link>
             ))}
-            <span className="hidden text-slate-400 md:inline">
-              {user.email}
-            </span>
-            <SignOutButton />
           </nav>
         </div>
       </header>
