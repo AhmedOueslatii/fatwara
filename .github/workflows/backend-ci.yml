@@ -18,6 +18,25 @@ jobs:
       run:
         working-directory: backend
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: fatwara_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:ci@localhost:5432/fatwara_test
+      JWT_SECRET: ci-placeholder
+      TEIF_SCHEMA_VERSION: "1.8.7"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -36,9 +55,8 @@ jobs:
       - name: Install Python deps
         run: pip install -r requirements.txt
 
+      - name: Run alembic migrations
+        run: alembic upgrade head
+
       - name: Run pytest
-        env:
-          TEIF_SCHEMA_VERSION: "1.8.7"
-          DATABASE_URL: "postgresql+asyncpg://placeholder:placeholder@localhost:5432/placeholder"
-          JWT_SECRET: "ci-placeholder"
         run: pytest tests/ -v --tb=short
