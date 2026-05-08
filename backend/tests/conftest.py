@@ -15,9 +15,7 @@ from app.main import app  # noqa: E402
 
 @pytest_asyncio.fixture(autouse=True)
 async def reset_db_between_tests():
-    """Truncate invoice + audit_log between tests so persistence tests are isolated.
-
-    Users table is left alone — the dev user seeded by alembic stays.
+    """Truncate users + invoices + audit_log between tests so each test starts clean.
 
     Also disposes app.core.database.engine after each test, because pytest-asyncio
     creates a fresh event loop per test by default and asyncpg connections bound
@@ -25,7 +23,9 @@ async def reset_db_between_tests():
     """
     engine = create_async_engine(settings.DATABASE_URL, future=True)
     async with engine.begin() as conn:
-        await conn.execute(text("TRUNCATE audit_log, invoices RESTART IDENTITY CASCADE"))
+        await conn.execute(
+            text("TRUNCATE audit_log, invoices, users RESTART IDENTITY CASCADE")
+        )
     await engine.dispose()
     yield
     await database.engine.dispose()
@@ -36,6 +36,16 @@ async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest_asyncio.fixture
+async def auth_client(client):
+    """Client pre-authenticated as a fresh user. The httpx cookie jar carries the
+    access_token cookie, so any subsequent request goes through as that user."""
+    payload = {"email": "tester@example.com", "password": "hunter2hunter2"}
+    response = await client.post("/api/v1/auth/register", json=payload)
+    assert response.status_code == 201, response.text
+    return client
 
 
 @pytest.fixture
