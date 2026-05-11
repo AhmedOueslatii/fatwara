@@ -4,8 +4,9 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.deps import current_user
 from app.core.database import get_session
-from app.core.dev_user import DEV_USER_ID
+from app.models.db.user import User
 from app.models.invoice import InvoiceCreate, InvoiceResponse, InvoiceStatus
 from app.repositories.invoice_repo import IdempotencyConflict, InvoiceRepo
 from app.services.teif_generator import generate_teif_xml, validate_against_xsd
@@ -16,6 +17,7 @@ router = APIRouter()
 @router.post("", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
 async def create_invoice(
     invoice: InvoiceCreate,
+    user: User = Depends(current_user),
     session: AsyncSession = Depends(get_session),
 ):
     invoice_id = uuid.uuid4()
@@ -38,7 +40,7 @@ async def create_invoice(
     try:
         row = await repo.create(
             invoice_id=invoice_id,
-            user_id=DEV_USER_ID,
+            user_id=user.id,
             idempotency_key=idempotency_key,
             invoice_date=invoice.invoice_date,
             currency=invoice.currency,
@@ -70,10 +72,11 @@ async def create_invoice(
 @router.get("/{invoice_id}/status")
 async def invoice_status(
     invoice_id: uuid.UUID,
+    user: User = Depends(current_user),
     session: AsyncSession = Depends(get_session),
 ):
     repo = InvoiceRepo(session)
     row = await repo.get_by_id(invoice_id)
-    if row is None:
+    if row is None or row.user_id != user.id:
         raise HTTPException(status_code=404, detail="Invoice not found")
     return {"status": row.status, "ttn_reference": row.ttn_reference}
