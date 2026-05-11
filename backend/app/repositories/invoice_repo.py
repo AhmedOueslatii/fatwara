@@ -67,3 +67,23 @@ class InvoiceRepo:
             select(Invoice).where(Invoice.id == invoice_id)
         )
         return result.scalar_one_or_none()
+
+    async def update_status(
+        self,
+        invoice_id: uuid.UUID,
+        status: str,
+        *,
+        signed_xml: bytes | None = None,
+        ttn_reference: str | None = None,
+    ) -> Invoice | None:
+        row = await self.get_by_id(invoice_id)
+        if row is None:
+            return None
+        row.status = status
+        if signed_xml is not None:
+            row.signed_xml = signed_xml
+        if ttn_reference is not None:
+            row.ttn_reference = ttn_reference
+        await self.session.commit()
+        await self.session.refresh(row)
+        return row

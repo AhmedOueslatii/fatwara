@@ -1,7 +1,7 @@
 import uuid
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import current_user
@@ -9,6 +9,7 @@ from app.core.database import get_session
 from app.models.db.user import User
 from app.models.invoice import InvoiceCreate, InvoiceResponse, InvoiceStatus
 from app.repositories.invoice_repo import IdempotencyConflict, InvoiceRepo
+from app.services.invoice_pipeline import run_pipeline
 from app.services.teif_generator import generate_teif_xml, validate_against_xsd
 
 router = APIRouter()
@@ -17,6 +18,7 @@ router = APIRouter()
 @router.post("", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
 async def create_invoice(
     invoice: InvoiceCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -56,6 +58,8 @@ async def create_invoice(
         )
     except IdempotencyConflict:
         raise HTTPException(status_code=409, detail="Idempotency key conflict")
+
+    background_tasks.add_task(run_pipeline, invoice_id, user.id)
 
     return InvoiceResponse(
         invoice_id=str(row.id),
