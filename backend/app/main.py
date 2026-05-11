@@ -1,9 +1,25 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import auth, invoices, onboarding, system
 from app.core.config import settings
+from app.services.storage import StorageError, ensure_bucket
 
-app = FastAPI(title="Fatwara API", version="0.1.0")
+log = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    try:
+        ensure_bucket()
+    except StorageError as exc:
+        log.warning("MinIO bucket bootstrap failed: %s", exc)
+    yield
+
+
+app = FastAPI(title="Fatwara API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

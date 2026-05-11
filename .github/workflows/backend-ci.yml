@@ -33,10 +33,29 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+          MINIO_DEFAULT_BUCKETS: certs
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -sf http://localhost:9000/minio/health/live"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
     env:
       DATABASE_URL: "postgresql+asyncpg://postgres:ci@localhost:5432/fatwara_test"
       JWT_SECRET: ci-placeholder
       TEIF_SCHEMA_VERSION: "1.8.7"
+      MINIO_ENDPOINT: localhost:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET_CERTS: certs
+      MINIO_SECURE: "false"
 
     steps:
       - uses: actions/checkout@v4

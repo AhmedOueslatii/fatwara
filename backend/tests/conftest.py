@@ -11,11 +11,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from app.core import database  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.main import app  # noqa: E402
+from app.services import storage  # noqa: E402
 
 
 @pytest_asyncio.fixture(autouse=True)
 async def reset_db_between_tests():
-    """Truncate users + invoices + audit_log between tests so each test starts clean.
+    """Truncate users + invoices + audit_log + certs between tests so each test starts clean.
 
     Also disposes app.core.database.engine after each test, because pytest-asyncio
     creates a fresh event loop per test by default and asyncpg connections bound
@@ -24,11 +25,28 @@ async def reset_db_between_tests():
     engine = create_async_engine(settings.DATABASE_URL, future=True)
     async with engine.begin() as conn:
         await conn.execute(
-            text("TRUNCATE audit_log, invoices, users RESTART IDENTITY CASCADE")
+            text("TRUNCATE audit_log, invoices, certs, users RESTART IDENTITY CASCADE")
         )
     await engine.dispose()
     yield
     await database.engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def reset_minio_between_tests():
+    """Clear the certs bucket before each test so cert uploads start fresh.
+
+    Skips silently if MinIO is unreachable (lets non-cert tests run in environments
+    without MinIO available)."""
+    try:
+        storage.ensure_bucket()
+        client = storage._client()
+        bucket = settings.MINIO_BUCKET_CERTS
+        for obj in client.list_objects(bucket, recursive=True):
+            client.remove_object(bucket, obj.object_name)
+    except Exception:
+        pass
+    yield
 
 
 @pytest_asyncio.fixture
