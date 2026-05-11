@@ -22,7 +22,7 @@ def parse_cert(cert_bytes: bytes, password: bytes | None = None) -> dict:
     return {
         "format": fmt,
         "subject": certificate.subject.rfc4514_string(),
-        "expires_at": expiry.isoformat(),
+        "expires_at": expiry,
         "days_until_expiry": days_left,
         "warn": days_left <= 30,
     }
