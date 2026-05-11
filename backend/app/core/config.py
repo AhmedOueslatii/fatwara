@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     TTN_BASE_URL: str = ""
     TTN_CLIENT_ID: str = ""
     TTN_CLIENT_SECRET: str = ""
+    TTN_MOCK_MODE: str = "accept"  # accept | reject | timeout | random
 
     TEIF_SCHEMA_VERSION: str = "1.8.7"
     TEIF_STRICT_VALIDATION: bool = False
