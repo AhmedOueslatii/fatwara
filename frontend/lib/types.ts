@@ -79,6 +79,42 @@ export interface UserResponse {
   is_verified: boolean;
 }
 
+export interface ExtractedAddress {
+  street_name: string | null;
+  city_name: string | null;
+  postal_zone: string | null;
+  country_subentity: string | null;
+}
+
+export interface ExtractedParty {
+  name: string | null;
+  matricule: string | null;
+  address: ExtractedAddress;
+}
+
+export interface ExtractedLineItem {
+  description: string | null;
+  quantity: string | null;
+  unit_price: string | null;
+  tva_rate: string | null;
+}
+
+export interface ExtractedInvoice {
+  supplier: ExtractedParty;
+  customer: ExtractedParty;
+  invoice_date: string | null;
+  items: ExtractedLineItem[];
+  currency: string | null;
+  note: string | null;
+}
+
+export interface ExtractResponse {
+  extracted: ExtractedInvoice;
+  provider: string;
+  confidence: number | null;
+  raw_text: string | null;
+}
+
 export interface OnboardingStatus {
   cert_ok: boolean;
   ttn_ok: boolean;

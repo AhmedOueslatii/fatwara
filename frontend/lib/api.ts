@@ -1,5 +1,6 @@
 import type {
   CertUploadResponse,
+  ExtractResponse,
   InvoiceCreate,
   InvoiceListItem,
   InvoiceResponse,
@@ -88,6 +89,12 @@ export const api = {
     list: () => apiFetch<InvoiceListItem[]>("/api/v1/invoices"),
     status: (id: string) =>
       apiFetch<InvoiceStatusResponse>(`/api/v1/invoices/${id}/status`),
+    extract: (file: File, provider?: "gemini" | "mistral") => {
+      const form = new FormData();
+      form.append("file", file);
+      const qs = provider ? `?provider=${provider}` : "";
+      return apiUpload<ExtractResponse>(`/api/v1/invoices/extract${qs}`, form);
+    },
   },
   onboarding: {
     status: () => apiFetch<OnboardingStatus>("/api/v1/onboarding/status"),
