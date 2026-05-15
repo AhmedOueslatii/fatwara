@@ -62,6 +62,23 @@ export interface InvoiceStatusResponse {
   ttn_reference: string | null;
 }
 
+export interface InvoiceListItem {
+  invoice_id: string;
+  status: InvoiceStatus;
+  invoice_date: string;
+  customer_name: string;
+  total_ttc: string;
+  ttn_reference: string | null;
+  created_at: string;
+}
+
+export interface UserResponse {
+  id: string;
+  email: string;
+  is_active: boolean;
+  is_verified: boolean;
+}
+
 export interface OnboardingStatus {
   cert_ok: boolean;
   ttn_ok: boolean;

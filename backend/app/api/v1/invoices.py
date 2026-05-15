@@ -73,6 +73,27 @@ async def create_invoice(
     )
 
 
+@router.get("")
+async def list_invoices(
+    user: User = Depends(current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    repo = InvoiceRepo(session)
+    rows = await repo.list_for_user(user.id)
+    return [
+        {
+            "invoice_id": str(row.id),
+            "status": row.status,
+            "invoice_date": row.invoice_date.isoformat(),
+            "customer_name": row.customer_name,
+            "total_ttc": str(row.total_ttc),
+            "ttn_reference": row.ttn_reference,
+            "created_at": row.created_at.isoformat(),
+        }
+        for row in rows
+    ]
+
+
 @router.get("/{invoice_id}/status")
 async def invoice_status(
     invoice_id: uuid.UUID,
