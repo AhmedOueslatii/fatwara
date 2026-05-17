@@ -1,6 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import { InvoiceForm } from "@/components/invoice-form";
+import { OcrUpload } from "@/components/ocr-upload";
+import type { ExtractedInvoice } from "@/lib/types";
 
 export default function NewInvoicePage() {
+  const [extracted, setExtracted] = useState<ExtractedInvoice | undefined>();
+
   return (
     <div className="space-y-6">
       <div>
@@ -11,7 +18,9 @@ export default function NewInvoicePage() {
         </p>
       </div>
 
-      <InvoiceForm />
+      <OcrUpload onExtracted={(data) => setExtracted(data)} />
+
+      <InvoiceForm defaults={extracted} />
     </div>
   );
 }

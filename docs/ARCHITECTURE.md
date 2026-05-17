@@ -60,6 +60,12 @@ These are non-negotiable inputs the architecture has to respect:
 - **signxml** for XAdES-BES signing — RSA-SHA256, enveloped, C14N. The library handles the algorithm details TTN cares about.
 - **Official TEIF XSD** — not yet bundled. CI compliance gate runs in skip mode until we obtain it from the TTN developer portal. When the file lands, the gate auto-blocks merges that break schema.
 
+### OCR (invoice photo → form pre-fill)
+
+- Vision-LLM extraction via a `OcrClient` interface, two implementations: Gemini 2.0 Flash (free, US-hosted) and Mistral Pixtral (free, EU-hosted). Provider switched by `OCR_PROVIDER` env var.
+- **Residency note:** the source image is sent to the chosen provider for the duration of one HTTP call and is **not persisted** (not in Postgres, not in MinIO). Only the structured fields the user accepts are persisted, as part of the regular invoice flow. This is transient processing, the same category as transactional email — distinct from the storage-residency requirement that drove the no-Supabase decision. Documented in code at `backend/app/services/ocr_client.py` so the choice is auditable.
+- If a stricter "no foreign processing" stance is later required, swap to a self-hosted Llama 3.2 Vision (or similar) on the Tunisian VPS — the `OcrClient` interface is the swap site.
+
 ### TTN integration — interface, not implementation
 - One interface: `TTNClient`.
 - Two implementations:

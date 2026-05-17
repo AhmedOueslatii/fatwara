@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import type {
   Address,
+  ExtractedInvoice,
   InvoiceCreate,
   InvoiceLineItem,
   Party,
@@ -46,11 +47,59 @@ const EMPTY_FORM: InvoiceCreate = {
 
 type PartyRole = "supplier" | "customer";
 
-export function InvoiceForm() {
+function mergeExtracted(
+  base: InvoiceCreate,
+  extracted: ExtractedInvoice,
+): InvoiceCreate {
+  const mergeParty = (b: Party, e: ExtractedInvoice["supplier"]): Party => ({
+    name: e.name ?? b.name,
+    matricule: e.matricule ?? b.matricule,
+    address: {
+      street_name: e.address?.street_name ?? b.address.street_name,
+      city_name: e.address?.city_name ?? b.address.city_name,
+      postal_zone: e.address?.postal_zone ?? b.address.postal_zone,
+      country_subentity:
+        e.address?.country_subentity ?? b.address.country_subentity,
+      country_code: "TN",
+    },
+  });
+  const items =
+    extracted.items.length > 0
+      ? extracted.items.map((it) => ({
+          description: it.description ?? "",
+          quantity: it.quantity ?? "1",
+          unit_price: it.unit_price ?? "0.000",
+          tva_rate: it.tva_rate ?? "19",
+        }))
+      : base.items;
+  return {
+    ...base,
+    supplier: mergeParty(base.supplier, extracted.supplier),
+    customer: mergeParty(base.customer, extracted.customer),
+    invoice_date: extracted.invoice_date ?? base.invoice_date,
+    items,
+    currency: "TND",
+    note: extracted.note ?? base.note,
+  };
+}
+
+export function InvoiceForm({ defaults }: { defaults?: ExtractedInvoice } = {}) {
   const router = useRouter();
-  const [form, setForm] = useState<InvoiceCreate>(EMPTY_FORM);
+  const [form, setForm] = useState<InvoiceCreate>(() =>
+    defaults ? mergeExtracted(EMPTY_FORM, defaults) : EMPTY_FORM,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!defaults) return;
+    console.log("[InvoiceForm] applying OCR defaults:", defaults);
+    setForm((curr) => {
+      const merged = mergeExtracted(curr, defaults);
+      console.log("[InvoiceForm] merged form state:", merged);
+      return merged;
+    });
+  }, [defaults]);
 
   const totals = useMemo(() => computeTotals(form.items), [form.items]);
 

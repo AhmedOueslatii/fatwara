@@ -1,11 +1,40 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { api, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginForm() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await api.auth.login(email, password);
+      router.push("/dashboard");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        setError("Email ou mot de passe invalide.");
+      } else if (err instanceof ApiError) {
+        setError(`Erreur ${err.status}`);
+      } else {
+        setError("Erreur reseau.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <main className="mx-auto flex min-h-screen max-w-md items-center px-6">
       <Card className="w-full">
@@ -13,40 +42,47 @@ export default function LoginForm() {
           <CardTitle>Connexion</CardTitle>
         </CardHeader>
         <CardBody>
-          <form
-            onSubmit={(e) => e.preventDefault()}
-            className="space-y-4"
-            aria-disabled
-          >
+          <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" disabled autoComplete="email" />
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="password">Mot de passe</Label>
               <Input
                 id="password"
                 type="password"
-                disabled
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
+                required
               />
             </div>
 
-            <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-900">
-              L&apos;authentification arrive bientot. Pour l&apos;instant, le
-              tableau de bord est accessible sans connexion.
-            </p>
+            {error && (
+              <p className="text-sm text-red-600" role="alert">
+                {error}
+              </p>
+            )}
 
-            <Button type="submit" disabled className="w-full">
+            <Button type="submit" loading={loading} className="w-full">
               Se connecter
             </Button>
 
             <p className="text-center text-sm text-slate-600">
+              Pas encore de compte ?{" "}
               <Link
-                href="/dashboard"
+                href="/auth/register"
                 className="font-medium text-brand hover:underline"
               >
-                Acceder au tableau de bord
+                Creer un compte
               </Link>
             </p>
           </form>
