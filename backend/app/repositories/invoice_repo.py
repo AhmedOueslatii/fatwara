@@ -68,6 +68,14 @@ class InvoiceRepo:
         )
         return result.scalar_one_or_none()
 
+    async def list_for_user(self, user_id: uuid.UUID) -> list[Invoice]:
+        result = await self.session.execute(
+            select(Invoice)
+            .where(Invoice.user_id == user_id)
+            .order_by(Invoice.created_at.desc())
+        )
+        return list(result.scalars().all())
+
     async def update_status(
         self,
         invoice_id: uuid.UUID,

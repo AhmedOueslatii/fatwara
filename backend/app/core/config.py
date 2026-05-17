@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
     ENVIRONMENT: str = "development"
 
+    OCR_PROVIDER: str = "gemini"  # gemini | mistral
+    OCR_MAX_IMAGE_BYTES: int = 8 * 1024 * 1024  # 8 MiB
+    GEMINI_API_KEY: str = ""
+    MISTRAL_API_KEY: str = ""
+
     class Config:
         env_file = ".env"
 

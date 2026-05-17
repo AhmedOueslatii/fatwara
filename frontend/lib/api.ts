@@ -1,10 +1,13 @@
 import type {
   CertUploadResponse,
+  ExtractResponse,
   InvoiceCreate,
+  InvoiceListItem,
   InvoiceResponse,
   InvoiceStatusResponse,
   OnboardingStatus,
   SystemHealth,
+  UserResponse,
 } from "./types";
 
 const BASE =
@@ -19,6 +22,7 @@ export class ApiError extends Error {
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
@@ -39,6 +43,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
+    credentials: "include",
     body: form,
   });
   if (!res.ok) {
@@ -57,14 +62,39 @@ export const api = {
   system: {
     health: () => apiFetch<SystemHealth>("/api/v1/system/health"),
   },
+  auth: {
+    login: (email: string, password: string) =>
+      apiFetch<UserResponse>("/api/v1/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      }),
+    register: (email: string, password: string) =>
+      apiFetch<UserResponse>("/api/v1/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      }),
+    logout: () =>
+      fetch(`${BASE}/api/v1/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      }),
+    me: () => apiFetch<UserResponse>("/api/v1/auth/me"),
+  },
   invoices: {
     create: (body: InvoiceCreate) =>
       apiFetch<InvoiceResponse>("/api/v1/invoices", {
         method: "POST",
         body: JSON.stringify(body),
       }),
+    list: () => apiFetch<InvoiceListItem[]>("/api/v1/invoices"),
     status: (id: string) =>
       apiFetch<InvoiceStatusResponse>(`/api/v1/invoices/${id}/status`),
+    extract: (file: File, provider?: "gemini" | "mistral") => {
+      const form = new FormData();
+      form.append("file", file);
+      const qs = provider ? `?provider=${provider}` : "";
+      return apiUpload<ExtractResponse>(`/api/v1/invoices/extract${qs}`, form);
+    },
   },
   onboarding: {
     status: () => apiFetch<OnboardingStatus>("/api/v1/onboarding/status"),
